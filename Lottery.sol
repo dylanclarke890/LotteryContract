@@ -27,7 +27,12 @@ contract Lottery {
     }
 
     modifier hasEnoughEntries {
-        require(entriesCount > 5, "Not enough entries yet.");
+        require(entriesCount > 1, "Not enough entries yet.");
+        _;
+    }
+
+    modifier entriesLeft {
+        require(entriesCount < maxEntries, "No entries left.");
         _;
     }
 
@@ -41,46 +46,56 @@ contract Lottery {
         drawTime = block.timestamp + payoutInterval;
     }
 
-    function buyEntryTicket()
-    external payable lotteryInProgress returns(uint16) {
-        require(entriesCount < maxEntries, "No entries left.");
+    function buyEntryTicket() external payable lotteryInProgress entriesLeft returns(uint16) {
         require(msg.value >= entryCost, "Not enough ether for an entry.");
         entriesCount++;
         currentEntries[entriesCount] = address(msg.sender);
         return entriesCount;
     }
 
-    function getTotalPot() 
-    public view hasEnoughEntries returns (uint) {
+    function getTotalPot() public view hasEnoughEntries returns (uint) {
         uint cBalance = address(this).balance;
         return msg.sender == owner ? totalPlayerWinnings(cBalance, 30) : totalPlayerWinnings(cBalance, 70);
     }
 
-    function drawWinner() 
-    public hasEnoughEntries onlyOwner returns (address) {
+    function drawWinner() public hasEnoughEntries onlyOwner returns (address) {
         // Get a random number up to the count
         uint random = randomNumber(entriesCount - 1);
         require(random <= entriesCount - 1);
         // Calculate winnings and profit
         uint cBalance = address(this).balance;
-        uint ownerTakings = totalPlayerWinnings(cBalance, 30);
         uint winnerTakings = totalPlayerWinnings(cBalance, 70);
+        uint ownerTakings = cBalance - winnerTakings;
+        require(winnerTakings > ownerTakings && ownerTakings > 0, "Error with winnings calculations.");
         // Transfer pot to owner and winner
         address winner = currentEntries[random];
         (bool oSuccess,) = payable(owner).call{value: ownerTakings}("");
-        require(oSuccess);
+        require(oSuccess, "Payment to owner was not successful.");
         (bool wSuccess,) = payable(winner).call{value: winnerTakings}("");
-        require(wSuccess);
+        require(wSuccess, "Payment to winning player was not successful.");
+        // Reset entries and set new start/draw time.
+        newDraw();
         return winner;
     }
 
-    function totalPlayerWinnings(uint contractBalance, uint takeHomePercentage) 
-    internal pure returns(uint) {
+    function newDraw() internal {
+        deleteEntries();
+        entriesCount = 0;
+        startTime = block.timestamp;
+        drawTime = startTime + payoutInterval;
+    }
+
+    function deleteEntries() internal {
+        for (uint i = 0; i < entriesCount; i++) {
+           delete currentEntries[i+1];
+        }
+    }
+
+    function totalPlayerWinnings(uint contractBalance, uint takeHomePercentage) internal pure returns(uint) {
         return (contractBalance / 100) * takeHomePercentage;
     }
 
-    function randomNumber(uint upTo)
-    internal view returns(uint) {
+    function randomNumber(uint upTo) internal view returns(uint) {
         uint seed = uint(keccak256(abi.encodePacked(
             block.timestamp + block.difficulty +
             ((uint(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
