@@ -5,8 +5,8 @@ contract Lottery {
     address payable internal owner;
     mapping(uint => address) public currentEntries;
     uint16 public entriesCount; 
-    uint16 maxEntries;
-    uint startTime;
+    uint16 internal maxEntries;
+    uint internal startTime;
     uint public drawTime;
     uint64 public entryCost;
     uint16 public payoutInterval;
@@ -36,12 +36,12 @@ contract Lottery {
         _;
     }
 
-    constructor(address payable _owner) {
-        owner = _owner;
+    constructor() {
+        owner = payable(msg.sender);
         entriesCount = 0;
         maxEntries = 1000;
         entryCost = 0.05 ether;
-        payoutInterval = 1 hours;
+        payoutInterval = 60 seconds;
         startTime = block.timestamp;
         drawTime = block.timestamp + payoutInterval;
     }
@@ -77,35 +77,29 @@ contract Lottery {
         // Get a random number up to the count
         uint random = randomNumber(entriesCount - 1);
         require(random <= entriesCount - 1);
+
         // Calculate winnings and profit
         uint cBalance = address(this).balance;
         uint winnerTakings = totalPlayerWinnings(cBalance, 70);
         uint ownerTakings = cBalance - winnerTakings;
         require(winnerTakings > ownerTakings && ownerTakings > 0, "Error with winnings calculations.");
+
         // Transfer pot to owner and winner
         address winner = currentEntries[random];
         (bool oSuccess,) = payable(owner).call{value: ownerTakings}("");
         require(oSuccess, "Payment to owner was not successful.");
         (bool wSuccess,) = payable(winner).call{value: winnerTakings}("");
         require(wSuccess, "Payment to winning player was not successful.");
+
         // Reset entries and set new start/draw time.
-        newDraw();
-        return winner;
-    }
-
-    function newDraw()
-        internal {
-        deleteEntries();
-        startTime = block.timestamp;
-        drawTime = startTime + payoutInterval;
-    }
-
-    function deleteEntries()
-        internal {
         for (uint i = 0; i < entriesCount; i++) {
            delete currentEntries[i+1];
         }
         entriesCount = 0;
+        startTime = block.timestamp;
+        drawTime = startTime + payoutInterval;
+
+        return winner;
     }
 
     function totalPlayerWinnings(uint contractBalance, uint takeHomePercentage)
