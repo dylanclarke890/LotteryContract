@@ -9,8 +9,7 @@ pragma solidity ^0.8.0;
  * manner, since when dealing with meta-transactions the account sending and
  * paying for execution may not be the actual sender (as far as an application
  * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
+ * @author OpenZeppelin && Dylan Clarke
  */
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
