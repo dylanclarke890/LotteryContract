@@ -17,6 +17,15 @@ import './libraries/Maths.sol';
 contract Lottery is Context, LotteryContext, Interval, Owned {
     using Maths for uint;
 
+    /// @dev Emitted on successful `buyEntryTicket()` call.
+    event TicketPurchased(uint entryId);
+
+    /// @dev Emitted on successful payout to participant.
+    event WinnerPaid(uint amount);
+
+    /// @dev Emitted on refund due to insufficient participants.
+    event RefundsIssued();
+
     /**
     * @notice Purchases an entry to the lottery, as long as the lottery has started and there are still spaces available.
     * @dev If valid, maps the current entry count to the payer's address for future ref.
@@ -26,6 +35,7 @@ contract Lottery is Context, LotteryContext, Interval, Owned {
         require(_msgValue() >= entryCost, "Not enough ether for an entry.");
         _incrementCount();
         currentEntries[entriesCount] = address(_msgSender());
+        emit TicketPurchased(entriesCount);
         return entriesCount;
     }
 
@@ -61,6 +71,7 @@ contract Lottery is Context, LotteryContext, Interval, Owned {
         address winner = currentEntries[random];
         require(_transfer(owner, ownerTakings), "Payment to owner was not successful.");
         require(_transfer(winner, winnerTakings), "Payment to winning player was not successful.");
+        emit WinnerPaid(winnerTakings);
 
         _clearEntries();
         if (startNewRound) _newTimer();
@@ -77,6 +88,8 @@ contract Lottery is Context, LotteryContext, Interval, Owned {
         for (uint i = 0; i < entriesCount; i++) {
             require(_transfer(currentEntries[i+1], entryCost), "Error during refund.");
         }
+        emit RefundsIssued();
+
         _clearEntries();
         if (startNewRound) _newTimer();
     }
