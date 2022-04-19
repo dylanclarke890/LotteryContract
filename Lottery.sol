@@ -46,19 +46,34 @@ contract Lottery {
         drawTime = block.timestamp + payoutInterval;
     }
 
-    function buyEntryTicket() external payable lotteryInProgress entriesLeft returns(uint16) {
+    function buyEntryTicket()
+        external
+        payable
+        entriesLeft
+        lotteryInProgress
+        returns(uint16) {
         require(msg.value >= entryCost, "Not enough ether for an entry.");
         entriesCount++;
         currentEntries[entriesCount] = address(msg.sender);
         return entriesCount;
     }
 
-    function getTotalPot() public view hasEnoughEntries returns (uint) {
+    function getTotalPot()
+        public
+        view
+        hasEnoughEntries
+        lotteryInProgress
+        returns (uint) {
         uint cBalance = address(this).balance;
         return msg.sender == owner ? totalPlayerWinnings(cBalance, 30) : totalPlayerWinnings(cBalance, 70);
     }
 
-    function drawWinner() public hasEnoughEntries onlyOwner returns (address) {
+    function drawWinner()
+        public
+        onlyOwner
+        hasEnoughEntries
+        lotteryHasEnded
+        returns (address) {
         // Get a random number up to the count
         uint random = randomNumber(entriesCount - 1);
         require(random <= entriesCount - 1);
@@ -78,24 +93,32 @@ contract Lottery {
         return winner;
     }
 
-    function newDraw() internal {
+    function newDraw()
+        internal {
         deleteEntries();
-        entriesCount = 0;
         startTime = block.timestamp;
         drawTime = startTime + payoutInterval;
     }
 
-    function deleteEntries() internal {
+    function deleteEntries()
+        internal {
         for (uint i = 0; i < entriesCount; i++) {
            delete currentEntries[i+1];
         }
+        entriesCount = 0;
     }
 
-    function totalPlayerWinnings(uint contractBalance, uint takeHomePercentage) internal pure returns(uint) {
+    function totalPlayerWinnings(uint contractBalance, uint takeHomePercentage)
+        internal
+        pure
+        returns(uint) {
         return (contractBalance / 100) * takeHomePercentage;
     }
 
-    function randomNumber(uint upTo) internal view returns(uint) {
+    function randomNumber(uint upTo)
+        internal
+        view
+        returns(uint) {
         uint seed = uint(keccak256(abi.encodePacked(
             block.timestamp + block.difficulty +
             ((uint(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
