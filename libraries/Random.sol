@@ -14,7 +14,7 @@ library Random {
      * @param sender The address of the original `msg.sender`. Used as part of the seed generation.
      * @return A pseudo-random number. 
      */
-    function ranUint(uint upTo, address sender) public view returns(uint) {
+    function ranUint(uint upTo, address sender) internal view returns(uint) {
         uint seed = uint(keccak256(abi.encodePacked(
             block.timestamp + block.difficulty +
             ((uint(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +

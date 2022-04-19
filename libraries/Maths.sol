@@ -41,7 +41,7 @@ library Maths {
      *
      * Safe counterpart to Solidity's `/` operator for unsigned integers.
      */
-    function div(uint a, uint b) public pure returns(uint) {
+    function div(uint a, uint b) internal pure returns(uint) {
         if (a == 0 || b == 0) return 0;
         return a / b;
     }
@@ -56,7 +56,7 @@ library Maths {
      *
      * - Multiplication cannot overflow.
      */
-    function mul(uint a, uint b) public pure returns(uint) {
+    function mul(uint a, uint b) internal pure returns(uint) {
         if (a == 0 || b == 0) return 0;
         return a * b;
     }
@@ -67,7 +67,7 @@ library Maths {
      *
      * Safe counterpart to Solidity's `%` operator.
      */
-    function mod(uint a, uint b) public pure returns(uint) {
+    function mod(uint a, uint b) internal pure returns(uint) {
         if (a == 0 || b == 0) return 0;
         return a % b;
     }
@@ -75,7 +75,7 @@ library Maths {
     /**
      * @dev Returns the percentage of an unsigned integer, returning zero if either param is zero.
      */
-    function percent(uint num, uint percentage) public pure returns(uint) {
+    function percent(uint num, uint percentage) internal pure returns(uint) {
         if (num == 0 || percentage == 0) return 0;
         return (num / 100) * percentage;
     }
