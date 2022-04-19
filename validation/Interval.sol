@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.0;
 
-import 'Maths.sol';
+import '../libraries/Maths.sol';
 
-abstract contract LotteryTimeLimit {
+abstract contract Interval {
     uint16 public payoutInterval;
     uint internal startTime;
     uint public drawTime;
@@ -13,13 +13,15 @@ abstract contract LotteryTimeLimit {
         _newDrawTime();
     }
 
-    modifier lotteryInProgress() {
-        require(block.timestamp >= startTime && block.timestamp <= drawTime, "Lottery is not in progress.");
+    modifier inProgress() {
+        uint time = block.timestamp;
+        require(time >= startTime && time <= drawTime, "Not in progress.");
         _;
     }
 
-    modifier lotteryHasEnded() {
-        require(block.timestamp >= drawTime, "Lottery in progress.");
+    modifier notInProgress() {
+        uint time = block.timestamp;
+        require(time >= drawTime || time < startTime, "In progress.");
         _;
     }
 

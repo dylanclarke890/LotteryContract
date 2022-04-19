@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.0;
 
-import './Context.sol';
-import './LotteryContext.sol';
-import './LotteryTimeLimit.sol';
-import './Owned.sol';
-import './Random.sol';
-import './Maths.sol';
+import './contexts/Context.sol';
+import './contexts/LotteryContext.sol';
+import './validation/Interval.sol';
+import './validation/Owned.sol';
+import './libraries/Random.sol';
+import './libraries/Maths.sol';
 
-contract Lottery is Context, LotteryContext, LotteryTimeLimit, Owned {
+contract Lottery is Context, LotteryContext, Interval, Owned {
     using Maths for uint;
 
-    function buyEntryTicket() external payable canBuyEntries(1) lotteryInProgress returns(uint16) {
+    function buyEntryTicket() external payable canBuyEntries(1) inProgress returns(uint16) {
         require(_msgValue() >= entryCost, "Not enough ether for an entry.");
         _incrementCount();
         currentEntries[entriesCount] = address(_msgSender());
         return entriesCount;
     }
 
-    function getTotalPot() public view lotteryInProgress hasEnoughEntries returns (uint) {
+    function getTotalPot() public view hasEnoughEntries notInProgress returns (uint) {
         uint cBalance = address(this).balance;
         return _msgSender() == owner ? cBalance.percent(30) : cBalance.percent(70);
     }
 
-    function drawWinner(bool startNewRound) public onlyOwner lotteryHasEnded hasEnoughEntries returns (address) {
+    function drawWinner(bool startNewRound) public onlyOwner hasEnoughEntries notInProgress returns (address) {
         // Calculate winnings and profit
         uint cBalance = address(this).balance;
         uint winnerTakings = cBalance.percent(70);
@@ -45,7 +45,7 @@ contract Lottery is Context, LotteryContext, LotteryTimeLimit, Owned {
         return winner;
     }
 
-    function refundParticipants(bool startNewRound) public onlyOwner lotteryHasEnded notEnoughEntries {
+    function refundParticipants(bool startNewRound) public onlyOwner notEnoughEntries notInProgress {
         for (uint i = 0; i < entriesCount; i++) {
             require(_transfer(currentEntries[i+1], entryCost), "Error during refund.");
         }

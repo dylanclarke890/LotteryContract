@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import 'Context.sol';
+import '../contexts/Context.sol';
 
 abstract contract Owned is Context {
     address public owner;
